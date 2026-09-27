@@ -42,6 +42,10 @@ class GenerationRequest(BaseModel):
         description="List of outputs to generate: linkedin, twitter, advisory, executive_summary, presentation, infographic, video_package",
         json_schema_extra={"example": ["linkedin", "twitter", "advisory", "executive_summary"]},
     )
+    selected_audiences: Optional[List[str]] = Field(
+        default_factory=lambda: ["automatic"],
+        description="List of target audience levels: technical, executive, professional, general_public, automatic",
+    )
     settings: Optional[Dict[str, Any]] = Field(
         default_factory=lambda: {
             "audience": "executive",

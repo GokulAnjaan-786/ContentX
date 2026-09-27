@@ -77,6 +77,11 @@ INTERNAL_TERMS = {
     "vector database", "traceability pipeline", "multi-format content generation"
 }
 
+EXTRACTION_NOISE_TERMS = {
+    "page 1 of", "page 2 of", "page 3 of", "page 4 of", "page 5 of", "predictions.csv",
+    "total marks:", "submission: code", "submission instructions", "project overview"
+}
+
 DATE_REGEX = re.compile(r"\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*|\d{4}-\d{2}-\d{2})\b", re.IGNORECASE)
 NUMBER_REGEX = re.compile(r"\b\d+(?:[\.,]\d+)?%?\b")
 
@@ -94,12 +99,16 @@ def classify_and_clean_fact_item(item: Dict) -> Dict:
     numbers = raw_numbers or NUMBER_REGEX.findall(stmt)
     entities = raw_entities or []
 
-    # Check if statement is internal processing info
+    # Check if statement is internal processing info or extraction noise
     is_internal = any(term in stmt_lower for term in INTERNAL_TERMS)
+    is_noise = any(term in stmt_lower for term in EXTRACTION_NOISE_TERMS) or bool(re.search(r"\bpage\s+\d+\s+of\s+\d+\b", stmt_lower))
 
     if is_internal:
         fact_type = "internal_processing"
         importance = "internal"
+    elif is_noise:
+        fact_type = "document_metadata"
+        importance = "metadata"
     elif isinstance(item, dict) and item.get("fact_type"):
         fact_type = item["fact_type"]
         importance = item.get("importance", "high")
@@ -146,13 +155,14 @@ def classify_and_clean_fact_item(item: Dict) -> Dict:
 def generate_fallback_understanding(document: Document, chunks: List[DocumentChunk]) -> Dict:
     """
     Deterministic rule-based extractor used in testing or offline fallback mode.
+    Dynamically extracts domain-specific topics and facts without hardcoding cybersecurity defaults.
     """
     all_text = " ".join(c.text for c in chunks)
+    text_lower = all_text.lower()
     sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", all_text) if len(s.strip()) > 15]
 
     key_facts = []
     for idx, sentence in enumerate(sentences[:10]):
-        # Locate chunk containing this sentence
         matching_chunk = 0
         for c in chunks:
             if sentence[:30] in c.text:
@@ -166,8 +176,28 @@ def generate_fallback_understanding(document: Document, chunks: List[DocumentChu
         })
         key_facts.append(cleaned)
 
-    # Basic entity and type deduction
-    doc_type = "advisory" if "advisory" in all_text.lower() else "article"
+    # Dynamic Topic & Domain Classification
+    if any(w in text_lower for w in ["sentiment", "nlp", "machine learning", "text classification", "drug", "dataset"]):
+        topics = ["machine-learning", "nlp", "sentiment-analysis", "data-science"]
+        doc_type = "research_paper"
+        entities = {"technologies": ["NLP", "Machine Learning"], "domain": ["Data Science"]}
+    elif any(w in text_lower for w in ["blockchain", "smart contract", "crypto", "ethereum", "web3"]):
+        topics = ["blockchain", "web3", "smart-contracts"]
+        doc_type = "technical_report"
+        entities = {"technologies": ["Smart Contracts", "Blockchain"], "domain": ["Web3"]}
+    elif any(w in text_lower for w in ["vulnerability", "cve-", "advisory", "threat actor", "ioc"]):
+        topics = ["security-advisory", "incident-response", "cybersecurity"]
+        doc_type = "security_advisory"
+        entities = {"topics": ["Threat Intelligence", "System Security"]}
+    elif any(w in text_lower for w in ["revenue", "profit", "quarterly", "fiscal", "growth", "margin"]):
+        topics = ["business-strategy", "financial-analysis", "corporate"]
+        doc_type = "executive_report"
+        entities = {"domain": ["Corporate Finance"]}
+    else:
+        topics = ["general-analysis", "key-findings"]
+        doc_type = "article"
+        entities = {"topics": ["General Analysis"]}
+
     summary = (
         f"Analysis of {document.file_name or 'source text'} outlines operational findings "
         f"and structured domain knowledge across {len(chunks)} sections."
@@ -176,13 +206,8 @@ def generate_fallback_understanding(document: Document, chunks: List[DocumentChu
     return {
         "summary": summary,
         "document_type": doc_type,
-        "entities": {
-            "people": ["Security Analysts"],
-            "organisations": ["Northstar Systems"],
-            "locations": ["Data Center"],
-            "products_systems": ["API Gateway"],
-        },
-        "topics": ["security-advisory", "incident-response", "findings"],
+        "entities": entities,
+        "topics": topics,
         "key_facts": key_facts,
     }
 

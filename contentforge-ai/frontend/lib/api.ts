@@ -149,6 +149,12 @@ export interface LinkedInContent {
   hashtags: string[];
   call_to_action: string;
   fact_ids_used: string[];
+  hashtag_suggestions?: Array<{
+    tag: string;
+    type?: string;
+    trend_status?: string;
+    label?: string;
+  }>;
 }
 
 export interface TweetItem {
@@ -242,11 +248,14 @@ export interface GenerationSettings {
   language: string;
   detail_level: "concise" | "standard" | "comprehensive";
   objective: string;
+  slide_count?: number;
+  requested_slide_count?: number;
 }
 
 export interface GenerationRequest {
   document_id: string;
   selected_outputs: OutputType[];
+  selected_audiences?: string[];
   settings?: Partial<GenerationSettings>;
 }
 

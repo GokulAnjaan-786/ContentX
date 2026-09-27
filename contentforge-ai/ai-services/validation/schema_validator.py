@@ -82,6 +82,9 @@ class SlideItem(BaseModel):
 class PresentationOutput(BaseModel):
     model_config = ConfigDict(extra="ignore")
 
+    requested_slide_count: int = Field(default=5)
+    actual_slide_count: int = Field(default=5)
+    title: str = Field(default="Strategic Presentation Overview")
     slides: List[SlideItem] = Field(default_factory=list)
     fact_ids_used: List[str] = Field(default_factory=list)
 

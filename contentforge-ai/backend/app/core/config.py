@@ -73,7 +73,7 @@ class Settings(BaseSettings):
     OLLAMA_BASE_URL: str = "http://localhost:11434"
     OLLAMA_MODEL: str = "qwen2.5:7b-instruct"
     OLLAMA_TIMEOUT: int = 120
-    EMBEDDING_MODEL: str = "BAAI/bge-m3"
+    EMBEDDING_MODEL: str = "bge-m3:latest"
     RAG_CONTEXT_TOKEN_LIMIT: int = 6000
 
     # Blockchain Trust Layer & Verification (Part 5)

@@ -22,8 +22,8 @@ class DocumentChunk(Base):
     page_number = sa.Column(sa.Integer, nullable=True)
     section_reference = sa.Column(sa.String(128), nullable=True)
     word_count = sa.Column(sa.Integer, nullable=True)
-    # 1536-dim vector for embeddings (e.g. OpenAI text-embedding-3-small or similar), left nullable for Part 1
-    embedding = sa.Column(Vector(1536), nullable=True)
+    # 1024-dim vector for embeddings (BGE-M3 native dimension)
+    embedding = sa.Column(Vector(1024), nullable=True)
     created_at = sa.Column(sa.DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), nullable=False)
 
     # Relationships

@@ -367,6 +367,51 @@ export const LinkedInCard: React.FC<OutputCardProps<LinkedInContent>> = ({
             </button>
           </div>
         </div>
+
+        {/* 2b. Hashtag Suggestions Section */}
+        <div className="max-w-2xl mx-auto mt-4 p-4 bg-white border border-slate-200 rounded-xl shadow-xs space-y-3">
+          <div className="flex items-center justify-between">
+            <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+              Hashtag Intelligence Suggestions
+            </h4>
+            <span className="text-[11px] font-medium text-slate-500">
+              {currentContent.hashtag_suggestions?.some(s => s.trend_status === "supported")
+                ? "Trend-Aware Intelligence Active"
+                : "Topic & Industry Relevance Fallback"}
+            </span>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {(currentContent.hashtag_suggestions || (currentContent.hashtags || []).map(t => ({ tag: t, label: "Recommended" }))).map((item, idx) => {
+              const tagText = item.tag.startsWith("#") ? item.tag : `#${item.tag}`;
+              const isSelected = (currentContent.hashtags || []).includes(tagText);
+
+              return (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    if (!isEditing) return;
+                    const updated = isSelected
+                      ? currentContent.hashtags.filter(t => t !== tagText)
+                      : [...(currentContent.hashtags || []), tagText];
+                    setEditedContent({ ...editedContent, hashtags: updated });
+                  }}
+                  className={`text-xs px-3 py-1.5 rounded-lg border font-medium flex items-center gap-1.5 transition-colors ${
+                    isSelected
+                      ? "bg-blue-50 border-blue-300 text-[#0A66C2]"
+                      : "bg-slate-50 border-slate-200 text-slate-600 hover:bg-slate-100"
+                  }`}
+                >
+                  <span>{tagText}</span>
+                  {item.label && (
+                    <span className="text-[9px] uppercase px-1.5 py-0.5 rounded bg-blue-100 text-blue-800 font-semibold">
+                      {item.label}
+                    </span>
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </div>
       </div>
 
       {/* 3. Separate ContentX Verification & Claim Inspector Area */}

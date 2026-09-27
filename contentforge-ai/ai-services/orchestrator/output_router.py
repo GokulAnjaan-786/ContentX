@@ -19,6 +19,12 @@ from ai_services.generators.video_generator import generate_video_package
 from ai_services.validation.schema_validator import validate_output_schema
 from ai_services.validation.fact_checker import verify_output_facts, check_cross_output_consistency
 
+from ai_services.understanding.embeddings import (
+    generate_and_store_chunk_embeddings,
+    search_relevant_chunks,
+    get_active_embedding_model_name,
+)
+
 logger = logging.getLogger(__name__)
 
 GENERATOR_ROUTER: Dict[str, Callable] = {
@@ -31,6 +37,18 @@ GENERATOR_ROUTER: Dict[str, Callable] = {
     "video_package": generate_video_package,
 }
 
+OUTPUT_RETRIEVAL_OBJECTIVES: Dict[str, str] = {
+    "presentation": "Retrieve key topic, background, major findings, data statistics, strategic impact, and conclusion takeaways for presentation slides.",
+    "executive_summary": "Retrieve major findings, strategic impact, important numbers, dates, status, key actions, and unresolved issues.",
+    "advisory": "Retrieve threat or issue, affected systems, products, technical identifiers, severity, attack vectors, impact, mitigation, and detection actions.",
+    "linkedin": "Retrieve core narrative, major technical/business findings, key statistics, and main takeaways for professional publishing.",
+    "twitter": "Retrieve key takeaways, concise findings, and major statistics for summary thread.",
+    "infographic": "Retrieve core statistics, key data points, metrics, and structured milestones for visual breakdown.",
+    "video_package": "Retrieve major narrative events, key findings, and visualizable telemetry/data for broadcast script.",
+}
+
+
+from ai_services.orchestrator.audience_profile import resolve_audiences
 
 async def _run_single_generator(
     output_type: str,
@@ -38,6 +56,7 @@ async def _run_single_generator(
     formatted_facts: str,
     raw_facts: List[Dict[str, Any]],
     settings: Dict[str, Any],
+    audience: str = "professional",
 ) -> Dict[str, Any]:
     """Execute a single generator asynchronously with metric tracking."""
     import time
@@ -48,6 +67,8 @@ async def _run_single_generator(
             raw_facts=raw_facts,
             settings=settings,
         )
+        if isinstance(res, dict):
+            res["audience"] = audience
         duration = time.perf_counter() - start_t
         try:
             from app.core.metrics import AI_GENERATION_DURATION
@@ -71,13 +92,14 @@ async def execute_generation_job(
     job_id: uuid.UUID,
 ) -> GenerationJob:
     """
-    Orchestrate multi-format generation job:
+    Orchestrate multi-format generation job with Truth Compression support:
     1. Retrieve job settings and Fact Registry.
-    2. Route each format to its generator.
-    3. Execute all generators in parallel using asyncio.gather.
-    4. Validate each output schema and verify claims against Fact Registry.
-    5. Perform cross-output consistency check across generated artifacts.
-    6. Persist generated outputs and update job status.
+    2. Resolve (output_type, audience) combinations.
+    3. Route each (format, audience) pair to its generator.
+    4. Execute all generators in parallel using asyncio.gather.
+    5. Validate each output schema and verify claims against Fact Registry.
+    6. Perform cross-output & audience consistency check across generated artifacts.
+    7. Persist generated outputs and update job status.
     """
     job = db.query(GenerationJob).filter(GenerationJob.id == job_id).first()
     if not job:
@@ -104,21 +126,59 @@ async def execute_generation_job(
     fact_statements_map = {f.fact_id_string: f.fact_statement for f in facts}
     selected_outputs = job.selected_outputs or []
     settings = job.settings or {}
+    selected_audiences = settings.get("selected_audiences") or settings.get("audience") or ["automatic"]
+    if isinstance(selected_audiences, str):
+        selected_audiences = [selected_audiences]
+
+    # Resolve output + audience pairs
+    generation_pairs = resolve_audiences(selected_outputs, selected_audiences)
 
     # Build tasks for parallel execution
     tasks = []
-    output_types_ordered = []
+    output_pairs_ordered = []
 
-    for out_type in selected_outputs:
+    for pair in generation_pairs:
+        out_type = pair["output_type"]
+        aud_type = pair["audience"]
         key = out_type.lower().strip()
         generator_fn = GENERATOR_ROUTER.get(key)
         if not generator_fn:
             logger.warning(f"Unknown generator requested: {key}")
             continue
 
-        formatted_facts, raw_facts = build_generator_context(facts, key, settings)
-        tasks.append(_run_single_generator(key, generator_fn, formatted_facts, raw_facts, settings))
-        output_types_ordered.append(key)
+        # 1. Output-Specific RAG Retrieval using BGE-M3 + pgvector
+        retrieval_objective = OUTPUT_RETRIEVAL_OBJECTIVES.get(key, "Retrieve relevant source facts and key findings.")
+        try:
+            generate_and_store_chunk_embeddings(db, job.document_id)
+            relevant_chunks = search_relevant_chunks(db, job.document_id, query=retrieval_objective, top_k=8)
+            retrieved_chunk_ids = {c.id for c in relevant_chunks}
+        except Exception as rag_err:
+            logger.warning(f"RAG retrieval warning for {key}: {rag_err}")
+            relevant_chunks = []
+            retrieved_chunk_ids = set()
+
+        # 2. Filter FactRegistry facts linked to retrieved chunks or high/medium importance
+        if retrieved_chunk_ids:
+            relevant_facts = [
+                f for f in facts 
+                if f.source_chunk_id in retrieved_chunk_ids or getattr(f, "importance", "high") in ("high", "medium")
+            ]
+            if not relevant_facts:
+                relevant_facts = facts
+        else:
+            relevant_facts = facts
+
+        formatted_facts, raw_facts = build_generator_context(relevant_facts, key, settings, audience=aud_type)
+
+        # Logging development debug visibility
+        active_model = get_active_embedding_model_name()
+        logger.info(
+            f"RAG PIPELINE | OUTPUT: {key} | EMBEDDING_MODEL: {active_model} | VECTOR_STORE: PostgreSQL pgvector | "
+            f"RETRIEVED_CHUNKS: {len(relevant_chunks)} | SELECTED_FACTS: {len(relevant_facts)} | FINAL_CONTEXT_FACTS: {len(raw_facts)}"
+        )
+
+        tasks.append(_run_single_generator(key, generator_fn, formatted_facts, raw_facts, settings, audience=aud_type))
+        output_pairs_ordered.append((key, aud_type))
 
     # Execute all generators in parallel
     logger.info(f"Executing {len(tasks)} generators in parallel for job {job.id}...")
@@ -128,11 +188,11 @@ async def execute_generation_job(
     has_warnings = False
     completed_outputs_for_consistency: List[Dict[str, Any]] = []
 
-    for out_type, result in zip(output_types_ordered, results):
+    for (out_type, aud_type), result in zip(output_pairs_ordered, results):
         output_id = uuid.uuid4()
 
         if isinstance(result, Exception):
-            logger.error(f"Generator {out_type} failed with exception: {result}")
+            logger.error(f"Generator {out_type} ({aud_type}) failed with exception: {result}")
             gen_out = GeneratedOutput(
                 id=output_id,
                 job_id=job.id,

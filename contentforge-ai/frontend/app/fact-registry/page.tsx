@@ -165,7 +165,7 @@ export default function FactRegistryPage() {
               <div className="font-bold text-slate-500 uppercase text-[10px] tracking-wide flex items-center gap-1">
                 <FileText className="w-3 h-3 text-brand-600" /> Source Snippet Evidence
               </div>
-              <p className="italic font-mono text-slate-800">"{fact.source_snippet}"</p>
+              <p className="italic font-mono text-slate-800">&quot;{fact.source_snippet}&quot;</p>
             </div>
 
             {/* Entity & Metadata Badges */}

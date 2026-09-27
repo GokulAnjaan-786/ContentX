@@ -60,12 +60,16 @@ async def create_generation_job(
 
     # 3. Create GenerationJob entity
     job_id = uuid.uuid4()
+    job_settings = payload.settings or {}
+    if payload.selected_audiences:
+        job_settings["selected_audiences"] = payload.selected_audiences
+
     job = GenerationJob(
         id=job_id,
         document_id=doc.id,
         requested_by=current_user.id,
         selected_outputs=payload.selected_outputs,
-        settings=payload.settings or {},
+        settings=job_settings,
         status=JobStatus.QUEUED.value,
     )
     db.add(job)

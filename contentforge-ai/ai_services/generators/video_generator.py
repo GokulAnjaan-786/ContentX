@@ -39,9 +39,12 @@ async def generate_video_package(
         .replace("{objective}", settings.get("objective", "explainer"))
     )
 
+    domain_key = "general"
+    if raw_facts and isinstance(raw_facts, list):
+        domain_key = raw_facts[0].get("domain_key", "general")
+
     try:
         result = await model_client.generate_structured(prompt=prompt, schema=VideoPackageOutput)
-        # Clean any accidental inline [f1] tags from LLM response
         if isinstance(result, dict) and "scenes" in result:
             for scene in result["scenes"]:
                 scene["narration"] = clean_scene_text(scene.get("narration", ""))
@@ -50,25 +53,50 @@ async def generate_video_package(
             result["title"] = clean_scene_text(result.get("title", ""))
         return result
     except Exception:
-        # Fallback for testing/offline with human-like broadcast tone
+        # Domain-aware fallback generator
         used_ids = []
         scenes = []
-        high_facts = [f for f in raw_facts if f.get("importance") != "internal"] or raw_facts
+        high_facts = [
+            f for f in raw_facts 
+            if f.get("importance") not in ("internal", "metadata") 
+            and f.get("fact_type") not in ("internal_processing", "document_metadata")
+        ] or raw_facts
 
         for i, fact in enumerate(high_facts[:3], start=1):
             fid = fact["fact_id_string"]
             used_ids.append(fid)
             stmt = fact.get("fact_statement", "").rstrip(".")
 
-            if i == 1:
-                narration = f"Security monitoring detected significant operational activity when {stmt.lower()}."
-                visual = "Security operations center dashboard showing highlighted system alert."
-            elif i == 2:
-                narration = f"Technical analysis confirmed that {stmt.lower()}."
-                visual = "Network diagram animation illustrating the impacted component and data flow."
+            if domain_key == "research":
+                if i == 1:
+                    narration = f"Analysis confirmed key technical findings when {stmt.lower()}."
+                    visual = "Data science workflow diagram displaying evaluation metrics."
+                elif i == 2:
+                    narration = f"Model evaluation verified that {stmt.lower()}."
+                    visual = "Interactive performance metric chart highlighting model outputs."
+                else:
+                    narration = f"Applying verified methodologies established that {stmt.lower()}."
+                    visual = "Technical summary dashboard displaying final results."
+            elif domain_key == "cybersecurity":
+                if i == 1:
+                    narration = f"Security monitoring detected operational findings when {stmt.lower()}."
+                    visual = "Security dashboard illustrating telemetry indicators."
+                elif i == 2:
+                    narration = f"Technical analysis confirmed that {stmt.lower()}."
+                    visual = "Network diagram animation showing system flow."
+                else:
+                    narration = f"Response protocols verified that {stmt.lower()}."
+                    visual = "Remediation status checklist."
             else:
-                narration = f"In response, teams implemented immediate controls so that {stmt.lower()}."
-                visual = "Remediation checklist and status indicator turning green."
+                if i == 1:
+                    narration = f"Overview analysis established that {stmt.lower()}."
+                    visual = "Executive overview presentation slide."
+                elif i == 2:
+                    narration = f"Detailed evaluation verified that {stmt.lower()}."
+                    visual = "Data visualization graph showing key metrics."
+                else:
+                    narration = f"Operational review confirmed that {stmt.lower()}."
+                    visual = "Summary takeaway dashboard."
 
             scenes.append({
                 "scene_no": i,
@@ -81,19 +109,18 @@ async def generate_video_package(
         if not scenes:
             scenes = [{
                 "scene_no": 1,
-                "narration": "Automated security telemetry alerted engineers to anomalous activity across operational gateways.",
-                "visual_description": "High-tech monitoring interface displaying system status.",
-                "subtitle_text": "Security telemetry alert detected.",
+                "narration": "Technical analysis provided verified operational insights.",
+                "visual_description": "Clean presentation slide displaying summary data.",
+                "subtitle_text": "Operational overview and findings.",
                 "duration_estimate_sec": 10,
             }]
             used_ids = ["f1"]
 
-        first_entity = high_facts[0].get("entities", ["System"])[0] if high_facts and high_facts[0].get("entities") else "System"
+        title_label = "Research & Technical Briefing" if domain_key == "research" else ("Security Advisory Briefing" if domain_key == "cybersecurity" else "Operational Technical Briefing")
 
         return {
-            "title": f"{first_entity} Incident Report & Operational Briefing",
+            "title": title_label,
             "total_duration_estimate": f"{len(scenes) * 12}s",
             "scenes": scenes,
             "fact_ids_used": sorted(list(set(used_ids))),
         }
-

@@ -104,7 +104,7 @@ export default function ClaimInspectorPage() {
                 1. Public Generated Claim (Clean — No exposed [f1] tags)
               </span>
               <p className="text-sm font-bold text-slate-900">
-                "{activeClaim.generated_claim}"
+                &quot;{activeClaim.generated_claim}&quot;
               </p>
             </div>
 
@@ -142,7 +142,7 @@ export default function ClaimInspectorPage() {
                 </span>
               </div>
               <p className="text-xs italic font-mono text-slate-900 bg-white p-2.5 rounded border border-slate-200">
-                "{activeClaim.original_source_snippet}"
+                &quot;{activeClaim.original_source_snippet}&quot;
               </p>
             </div>
 

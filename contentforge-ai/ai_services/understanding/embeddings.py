@@ -12,12 +12,12 @@ from app.models.document_chunk import DocumentChunk
 
 logger = logging.getLogger(__name__)
 
-EMBEDDING_DIM = 1536
+EMBEDDING_DIM = 1024
 
 
 def generate_fallback_embedding(text: str, dim: int = EMBEDDING_DIM) -> List[float]:
     """
-    Generate a normalized deterministic 1536-dimensional embedding vector
+    Generate a normalized deterministic 1024-dimensional embedding vector
     for local development, testing, and offline resilience.
     """
     vec = [0.0] * dim
@@ -49,12 +49,20 @@ def is_ollama_available() -> bool:
         return False
 
 
+def get_active_embedding_model_name() -> str:
+    """Return explicit description of embedding model active at runtime."""
+    if settings.ENVIRONMENT == "testing" or not is_ollama_available():
+        return "FALLBACK_DETERMINISTIC_VECTOR (offline/testing)"
+    return f"{settings.EMBEDDING_MODEL}"
+
+
 def generate_chunk_embedding(text: str) -> List[float]:
     """
     Generate embedding for text using Ollama BGE-M3 model,
     falling back to deterministic semantic vectors if Ollama is unreachable.
     """
     if settings.ENVIRONMENT == "testing" or not is_ollama_available():
+        logger.warning("WARNING: BGE-M3 unavailable. Using deterministic fallback embedding.")
         return generate_fallback_embedding(text)
 
     try:
@@ -63,19 +71,19 @@ def generate_chunk_embedding(text: str) -> List[float]:
             "model": settings.EMBEDDING_MODEL,
             "prompt": text,
         }
-        with httpx.Client(timeout=httpx.Timeout(10.0, connect=1.5)) as client:
+        with httpx.Client(timeout=httpx.Timeout(30.0, connect=2.0)) as client:
             resp = client.post(url, json=payload)
             if resp.status_code == 200:
                 raw_emb = resp.json().get("embedding", [])
                 if raw_emb:
-                    # Pad or truncate to 1536 dimensions
-                    if len(raw_emb) < EMBEDDING_DIM:
-                        raw_emb = raw_emb + [0.0] * (EMBEDDING_DIM - len(raw_emb))
-                    elif len(raw_emb) > EMBEDDING_DIM:
-                        raw_emb = raw_emb[:EMBEDDING_DIM]
+                    if len(raw_emb) != EMBEDDING_DIM:
+                        logger.error(
+                            f"BGE-M3 embedding dimension mismatch! Expected {EMBEDDING_DIM}, got {len(raw_emb)}"
+                        )
+                        raise ValueError(f"Invalid embedding dimension: {len(raw_emb)} != {EMBEDDING_DIM}")
                     return raw_emb
     except Exception as e:
-        logger.debug(f"Ollama embedding call failed ({e}), using fallback embedding.")
+        logger.warning(f"WARNING: BGE-M3 unavailable ({e}). Using deterministic fallback embedding.")
 
     return generate_fallback_embedding(text)
 
