@@ -83,7 +83,15 @@ async def generate_linkedin_post(
         combined_lower = (stmt1 + " " + stmt2).lower()
 
         # Domain-appropriate hook & phrasing
-        if domain_key == "research" or any(w in combined_lower for w in ["sentiment", "nlp", "machine learning", "drug", "classification"]):
+        if domain_key in ["finance", "financial_education"] or any(w in combined_lower for w in ["rich dad", "poor dad", "financial education", "asset", "money", "investing"]):
+            hook = "Financial Education & Wealth Insights: Key Principles"
+            body = (
+                f"Financial analysis verified that {stmt1.lower()}.\n\n"
+                f"Core principle confirmed that {stmt2.lower()}.\n\n"
+                f"Building financial literacy and acquiring cash-flowing assets remains key to financial independence."
+            )
+            cta = "Review the full analysis for complete financial literacy guidance."
+        elif domain_key == "research" or any(w in combined_lower for w in ["sentiment", "nlp", "machine learning", "drug", "classification"]):
             hook = "Key Insights: Overview of Recent Technical Analysis & Findings"
             body = (
                 f"Recent evaluation confirmed that {stmt1.lower()}.\n\n"

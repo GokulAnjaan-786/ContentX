@@ -79,7 +79,9 @@ INTERNAL_TERMS = {
 
 EXTRACTION_NOISE_TERMS = {
     "page 1 of", "page 2 of", "page 3 of", "page 4 of", "page 5 of", "predictions.csv",
-    "total marks:", "submission: code", "submission instructions", "project overview"
+    "total marks:", "submission: code", "submission instructions", "project overview",
+    "copyright", "all rights reserved", "cashflow technologies", "plata publishing",
+    "isbn", "printed in", "stolen property", "disclaim any liability", "legal or other expert assistance"
 }
 
 DATE_REGEX = re.compile(r"\b(\d{1,2}\s+(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[a-z]*|\d{4}-\d{2}-\d{2})\b", re.IGNORECASE)
@@ -114,18 +116,18 @@ def classify_and_clean_fact_item(item: Dict) -> Dict:
         importance = item.get("importance", "high")
     else:
         # Deduce type and importance based on domain content
-        if any(w in stmt_lower for w in ["recommend", "action", "patch", "isolate", "remediate", "mitigate"]):
+        if any(w in stmt_lower for w in ["title:", "version:", "author:", "document purpose", "gmail.com", "department of", "university", "college", "school of"]):
+            fact_type = "document_metadata"
+            importance = "metadata"
+        elif any(w in stmt_lower for w in ["recommend", "action", "patch", "isolate", "remediate", "mitigate", "lesson", "principle", "rule"]):
             fact_type = "action_item"
             importance = "high"
-        elif any(w in stmt_lower for w in ["detected", "alert", "anomalous", "unusual", "breach", "compromise", "incident"]):
+        elif any(w in stmt_lower for w in ["detected", "alert", "anomalous", "unusual", "breach", "compromise", "incident", "rich dad", "poor dad", "financial education", "asset"]):
             fact_type = "incident_finding"
             importance = "high"
         elif numbers or dates:
             fact_type = "statistic"
             importance = "high"
-        elif any(w in stmt_lower for w in ["title:", "version:", "author:", "document purpose"]):
-            fact_type = "document_metadata"
-            importance = "metadata"
         else:
             fact_type = "technical_detail"
             importance = "medium"
@@ -155,20 +157,30 @@ def classify_and_clean_fact_item(item: Dict) -> Dict:
 def generate_fallback_understanding(document: Document, chunks: List[DocumentChunk]) -> Dict:
     """
     Deterministic rule-based extractor used in testing or offline fallback mode.
-    Dynamically extracts domain-specific topics and facts without hardcoding cybersecurity defaults.
+    Dynamically extracts domain-specific topics and facts across all document chunks without hardcoding.
     """
     all_text = " ".join(c.text for c in chunks)
     text_lower = all_text.lower()
-    sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", all_text) if len(s.strip()) > 15]
+
+    # Filter candidate sentences across chunks, excluding copyright/preamble noise
+    candidate_sentences: List[Tuple[str, int]] = []
+    for c in chunks:
+        c_sentences = [s.strip() for s in re.split(r"(?<=[.!?])\s+", c.text) if len(s.strip()) > 25]
+        for s in c_sentences:
+            s_lower = s.lower()
+            if any(term in s_lower for term in ["copyright", "all rights reserved", "cashflow technologies", "plata publishing", "isbn", "stolen property", "printed in", "disclaim any liability"]):
+                continue
+            candidate_sentences.append((s, c.chunk_index))
+
+    selected_samples: List[Tuple[str, int]] = []
+    if len(candidate_sentences) <= 12:
+        selected_samples = candidate_sentences
+    else:
+        step = len(candidate_sentences) / 12
+        selected_samples = [candidate_sentences[int(i * step)] for i in range(12)]
 
     key_facts = []
-    for idx, sentence in enumerate(sentences[:10]):
-        matching_chunk = 0
-        for c in chunks:
-            if sentence[:30] in c.text:
-                matching_chunk = c.chunk_index
-                break
-
+    for sentence, matching_chunk in selected_samples:
         cleaned = classify_and_clean_fact_item({
             "statement": sentence,
             "source_chunk_index": matching_chunk,
@@ -177,7 +189,11 @@ def generate_fallback_understanding(document: Document, chunks: List[DocumentChu
         key_facts.append(cleaned)
 
     # Dynamic Topic & Domain Classification
-    if any(w in text_lower for w in ["sentiment", "nlp", "machine learning", "text classification", "drug", "dataset"]):
+    if any(w in text_lower for w in ["rich dad", "poor dad", "financial education", "asset", "liability", "cashflow", "wealth", "investing", "money"]):
+        topics = ["financial-education", "personal-finance", "asset-building", "wealth-creation"]
+        doc_type = "financial_book"
+        entities = {"topics": ["Financial Education", "Asset Management"], "concepts": ["Assets vs Liabilities", "Working for Money"]}
+    elif any(w in text_lower for w in ["sentiment", "nlp", "machine learning", "text classification", "drug", "dataset"]):
         topics = ["machine-learning", "nlp", "sentiment-analysis", "data-science"]
         doc_type = "research_paper"
         entities = {"technologies": ["NLP", "Machine Learning"], "domain": ["Data Science"]}

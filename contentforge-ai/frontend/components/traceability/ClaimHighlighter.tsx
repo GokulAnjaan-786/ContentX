@@ -34,12 +34,14 @@ export const ClaimHighlighter: React.FC<ClaimHighlighterProps> = ({
 
         // Check if this segment matches or contains any unverified claim
         const matchingUnverified = unverifiedClaims.find((u) => {
-          const cleanU = u.claim.trim().toLowerCase();
+          const claimStr = u && typeof u.claim === "string" ? u.claim : (u as any)?.reason || (u as any)?.schema_error || (u as any)?.error;
+          if (!claimStr || typeof claimStr !== "string") return false;
+          const cleanU = claimStr.trim().toLowerCase();
           const cleanS = trimmed.toLowerCase();
           return (
             cleanS.includes(cleanU) ||
             cleanU.includes(cleanS) ||
-            cleanS.slice(0, 30) === cleanU.slice(0, 30)
+            (cleanS.length >= 10 && cleanU.length >= 10 && cleanS.slice(0, 30) === cleanU.slice(0, 30))
           );
         });
 

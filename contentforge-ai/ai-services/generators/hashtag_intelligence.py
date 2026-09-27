@@ -6,6 +6,7 @@ KNOWN_DOMAIN_HASHTAGS = {
     "research": ["#MachineLearning", "#NLP", "#SentimentAnalysis", "#DataScience", "#ArtificialIntelligence", "#TextClassification"],
     "cybersecurity": ["#CyberSecurity", "#ThreatIntel", "#IncidentResponse", "#InfoSec", "#CyberSecurityAwareness", "#TechLeadership"],
     "blockchain": ["#Blockchain", "#Web3", "#SmartContracts", "#CryptoSecurity", "#DeFi", "#TechInnovation"],
+    "finance": ["#FinancialEducation", "#PersonalFinance", "#AssetsAndLiabilities", "#MoneyManagement", "#WealthCreation"],
     "business": ["#BusinessStrategy", "#Leadership", "#EnterpriseTech", "#FinancialGrowth", "#ExecutiveInsights", "#Innovation"],
     "education": ["#EdTech", "#HigherEducation", "#DataScience", "#AcademicResearch", "#LearningAndDevelopment"],
     "policy": ["#RegulatoryCompliance", "#TechPolicy", "#Governance", "#DataPrivacy", "#LegalTech"],
@@ -44,7 +45,9 @@ def generate_hashtag_intelligence(
 
     # 1. Topic-Based Hashtag Selection
     topic_candidates = []
-    if "sentiment" in combined_text or "drug" in combined_text:
+    if "rich dad" in combined_text or "poor dad" in combined_text or "financial education" in combined_text or "asset" in combined_text or "money" in combined_text or "investing" in combined_text:
+        topic_candidates.extend(["#FinancialEducation", "#PersonalFinance", "#AssetsAndLiabilities", "#MoneyManagement", "#WealthCreation"])
+    elif "sentiment" in combined_text or "drug" in combined_text:
         topic_candidates.extend(["#SentimentAnalysis", "#NLP", "#MachineLearning", "#TextClassification", "#DataScience"])
     elif "nlp" in combined_text or "text classification" in combined_text:
         topic_candidates.extend(["#NLP", "#TextClassification", "#MachineLearning", "#ArtificialIntelligence"])

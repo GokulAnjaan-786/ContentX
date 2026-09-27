@@ -201,7 +201,7 @@ async def execute_generation_job(
                 validation_score=0.0,
                 status="failed",
                 fact_ids_used=[],
-                unverified_claims=[{"error": str(result)}],
+                unverified_claims=[{"claim": f"Generation Error: {result}", "reason": str(result)}],
             )
             has_warnings = True
         else:
@@ -216,7 +216,7 @@ async def execute_generation_job(
                     validation_score=0.0,
                     status="failed",
                     fact_ids_used=[],
-                    unverified_claims=[{"schema_error": schema_err}],
+                    unverified_claims=[{"claim": f"Schema Validation Warning: {schema_err}", "reason": str(schema_err), "schema_error": str(schema_err)}],
                 )
                 has_warnings = True
             else:
