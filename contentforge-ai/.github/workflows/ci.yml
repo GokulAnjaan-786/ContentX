@@ -1,0 +1,142 @@
+name: CI Quality Gate
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-backend:
+    name: Lint Backend & AI Services (Ruff)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install Ruff linter
+        run: pip install ruff
+
+      - name: Run Ruff check
+        run: ruff check backend/ ai-services/ worker/ --ignore E501,E402,B008
+
+  test-backend:
+    name: Backend Pytest Suite
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: contentforge
+          POSTGRES_PASSWORD: contentforge_secret_pw
+          POSTGRES_DB: contentforge_test_db
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: "pip"
+
+      - name: Install system dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libmagic-dev clamav clamav-daemon
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r backend/requirements.txt
+          pip install ruff
+
+      - name: Run Pytest Test Suite
+        env:
+          ENVIRONMENT: testing
+          DATABASE_URL: postgresql://contentforge:contentforge_secret_pw@localhost:5432/contentforge_test_db
+          REDIS_URL: redis://localhost:6379/0
+          SECRET_KEY: test-secret-key-minimum-32-chars-long-for-jwt
+          CLAMAV_ENABLED: "false"
+        run: |
+          PYTHONPATH=backend:ai-services pytest backend/tests/ -v --junitxml=pytest-results.xml
+
+  lint-and-test-frontend:
+    name: Frontend Lint & Jest Suite
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "npm"
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run Jest Unit Tests
+        run: npm test -- --coverage --passWithNoTests
+
+  docker-build-check:
+    name: Docker Build Validation
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build Backend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: false
+          tags: contentforge-backend:test
+
+      - name: Build Worker Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: worker/Dockerfile
+          push: false
+          tags: contentforge-worker:test
+
+      - name: Build Frontend Docker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: false
+          tags: contentforge-frontend:test

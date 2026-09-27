@@ -1,0 +1,41 @@
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+
+# Node & Next.js
+node_modules/
+.next/
+.swc/
+*.tsbuildinfo
+dist/
+build/
+
+# Python cache & tests
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+.coverage
+htmlcov/
+*.egg-info/
+
+# Environment files & Secrets
+.env
+.env.*
+!.env.example
+
+# Logs & OS metadata
+*.log
+.DS_Store
+Thumbs.db
+
+# Storage & Databases
+postgres_data/
+redis_data/
+minio_data/
+clamav_data/
+storage_data/
+*.db

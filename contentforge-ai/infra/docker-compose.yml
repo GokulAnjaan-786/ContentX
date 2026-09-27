@@ -1,0 +1,304 @@
+version: '3.8'
+
+services:
+  # ============================================================================
+  # 1. PostgreSQL 16 with pgvector Extension
+  # ============================================================================
+  postgres:
+    image: pgvector/pgvector:pg16
+    container_name: contentforge_postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-contentforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-contentforge_secret_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-contentforge_db}
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-contentforge} -d ${POSTGRES_DB:-contentforge_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # 2. Redis 7 (Broker for Celery & SlowAPI Rate Limiting)
+  # ============================================================================
+  redis:
+    image: redis:7-alpine
+    container_name: contentforge_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  # ============================================================================
+  # 3. MinIO (S3-Compatible Object Storage)
+  # ============================================================================
+  minio:
+    image: minio/minio:latest
+    container_name: contentforge_minio
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_ROOT_PASSWORD: ${MINIO_SECRET_KEY:-minioadmin}
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio_data:/data
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  minio-init:
+    image: minio/mc:latest
+    container_name: contentforge_minio_init
+    depends_on:
+      minio:
+        condition: service_healthy
+    entrypoint: >
+      /bin/sh -c "
+      /usr/bin/mc alias set myminio http://minio:9000 ${MINIO_ACCESS_KEY:-minioadmin} ${MINIO_SECRET_KEY:-minioadmin};
+      /usr/bin/mc mb --ignore-existing myminio/${MINIO_BUCKET_NAME:-contentforge-documents};
+      /usr/bin/mc anonymous set download myminio/${MINIO_BUCKET_NAME:-contentforge-documents};
+      /usr/bin/mc version enable myminio/${MINIO_BUCKET_NAME:-contentforge-documents};
+      exit 0;
+      "
+
+  # ============================================================================
+  # 4. ClamAV Antivirus Daemon
+  # ============================================================================
+  clamav:
+    image: clamav/clamav:latest
+    container_name: contentforge_clamav
+    restart: unless-stopped
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav_data:/var/lib/clamav
+
+  # ============================================================================
+  # 5. Ollama LLM & Embedding Server
+  # ============================================================================
+  ollama:
+    image: ollama/ollama:latest
+    container_name: contentforge_ollama
+    restart: unless-stopped
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama_data:/root/.ollama
+
+  # ============================================================================
+  # 6. FastAPI Backend Service
+  # ============================================================================
+  backend:
+    build:
+      context: ..
+      dockerfile: backend/Dockerfile
+    container_name: contentforge_backend
+    restart: unless-stopped
+    command: >
+      /bin/sh -c "
+      echo 'Waiting for database...' &&
+      alembic upgrade head &&
+      uvicorn app.main:app --host 0.0.0.0 --port 8000
+      "
+    environment:
+      ENVIRONMENT: ${ENVIRONMENT:-development}
+      DEBUG: ${DEBUG:-true}
+      SECRET_KEY: ${SECRET_KEY:-change-this-to-a-super-secret-hex-key-minimum-32-chars-long}
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-contentforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-contentforge_secret_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-contentforge_db}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-contentforge}:${POSTGRES_PASSWORD:-contentforge_secret_pw}@postgres:5432/${POSTGRES_DB:-contentforge_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-contentforge-documents}
+      MINIO_SECURE: "false"
+      CLAMAV_ENABLED: ${CLAMAV_ENABLED:-true}
+      CLAMAV_HOST: clamav
+      CLAMAV_PORT: 3310
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b-instruct}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
+      PROMETHEUS_ENABLED: "true"
+      SENTRY_DSN: ${SENTRY_DSN:-}
+      RATE_LIMIT_UPLOAD: ${RATE_LIMIT_UPLOAD:-10/hour}
+      RATE_LIMIT_GENERATE: ${RATE_LIMIT_GENERATE:-20/hour}
+      DATA_RETENTION_DAYS: ${DATA_RETENTION_DAYS:-90}
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # ============================================================================
+  # 7. Celery Worker (Document Extraction & Pipeline Tasks)
+  # ============================================================================
+  worker:
+    build:
+      context: ..
+      dockerfile: worker/Dockerfile
+    container_name: contentforge_worker
+    restart: unless-stopped
+    environment:
+      POSTGRES_SERVER: postgres
+      POSTGRES_PORT: 5432
+      POSTGRES_USER: ${POSTGRES_USER:-contentforge}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-contentforge_secret_pw}
+      POSTGRES_DB: ${POSTGRES_DB:-contentforge_db}
+      DATABASE_URL: postgresql://${POSTGRES_USER:-contentforge}:${POSTGRES_PASSWORD:-contentforge_secret_pw}@postgres:5432/${POSTGRES_DB:-contentforge_db}
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      MINIO_ENDPOINT: minio:9000
+      MINIO_ACCESS_KEY: ${MINIO_ACCESS_KEY:-minioadmin}
+      MINIO_SECRET_KEY: ${MINIO_SECRET_KEY:-minioadmin}
+      MINIO_BUCKET_NAME: ${MINIO_BUCKET_NAME:-contentforge-documents}
+      MINIO_SECURE: "false"
+      OLLAMA_BASE_URL: http://ollama:11434
+      OLLAMA_MODEL: ${OLLAMA_MODEL:-qwen2.5:7b-instruct}
+      EMBEDDING_MODEL: ${EMBEDDING_MODEL:-bge-m3}
+      DATA_RETENTION_DAYS: ${DATA_RETENTION_DAYS:-90}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      minio:
+        condition: service_healthy
+
+  # ============================================================================
+  # 8. Celery Beat (Scheduled Maintenance & Data Retention Purge)
+  # ============================================================================
+  celery-beat:
+    build:
+      context: ..
+      dockerfile: worker/Dockerfile
+    container_name: contentforge_celery_beat
+    restart: unless-stopped
+    command: celery -A worker.celery_app beat --loglevel=info
+    environment:
+      CELERY_BROKER_URL: redis://redis:6379/0
+      CELERY_RESULT_BACKEND: redis://redis:6379/1
+      DATA_RETENTION_DAYS: ${DATA_RETENTION_DAYS:-90}
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ============================================================================
+  # 9. Flower (Celery Task Monitoring & Real-Time Dashboard)
+  # ============================================================================
+  flower:
+    image: mher/flower:latest
+    container_name: contentforge_flower
+    restart: unless-stopped
+    command: celery --broker=redis://redis:6379/0 flower --port=5555
+    ports:
+      - "5555:5555"
+    depends_on:
+      redis:
+        condition: service_healthy
+
+  # ============================================================================
+  # 10. Prometheus (Time-Series Monitoring & Metrics Scraper)
+  # ============================================================================
+  prometheus:
+    image: prom/prometheus:v2.51.0
+    container_name: contentforge_prometheus
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    ports:
+      - "9090:9090"
+
+  # ============================================================================
+  # 11. Grafana (Operational & AI Performance Dashboards)
+  # ============================================================================
+  grafana:
+    image: grafana/grafana:10.4.0
+    container_name: contentforge_grafana
+    restart: unless-stopped
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD:-admin123}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+      - grafana_data:/var/lib/grafana
+    ports:
+      - "3001:3000"
+    depends_on:
+      - prometheus
+
+  # ============================================================================
+  # 12. Next.js Frontend Dashboard
+  # ============================================================================
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: contentforge_frontend
+    restart: unless-stopped
+    environment:
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-http://localhost:8000}
+    ports:
+      - "3000:3000"
+    depends_on:
+      - backend
+
+  # ============================================================================
+  # 13. Nginx Gateway & Reverse Proxy
+  # ============================================================================
+  nginx:
+    image: nginx:alpine
+    container_name: contentforge_nginx
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+      - ./nginx/proxy_rules.inc:/etc/nginx/conf.d/proxy_rules.inc:ro
+      - certbot_etc:/etc/nginx/ssl
+      - certbot_www:/var/www/certbot
+    depends_on:
+      - backend
+      - frontend
+
+volumes:
+  postgres_data:
+  redis_data:
+  minio_data:
+  clamav_data:
+  ollama_data:
+  prometheus_data:
+  grafana_data:
+  certbot_etc:
+  certbot_www:

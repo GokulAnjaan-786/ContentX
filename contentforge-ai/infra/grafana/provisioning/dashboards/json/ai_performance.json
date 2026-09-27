@@ -1,0 +1,100 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Avg Generation Time (All Formats)",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(contentforge_ai_generation_duration_seconds_sum[5m])) / clamp_min(sum(rate(contentforge_ai_generation_duration_seconds_count[5m])), 0.001)",
+          "legendFormat": "Avg Duration (s)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 6, "y": 0 },
+      "id": 2,
+      "title": "Total Facts Registered",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "contentforge_facts_extracted_total",
+          "legendFormat": "Facts Ingested",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 12, "y": 0 },
+      "id": 3,
+      "title": "Prompt Injection Detections",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "contentforge_security_detections_total{category=\"prompt_injection\"}",
+          "legendFormat": "Injections Flagged",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 6, "x": 18, "y": 0 },
+      "id": 4,
+      "title": "PII Detected Documents",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "contentforge_security_detections_total{category=\"pii\"}",
+          "legendFormat": "PII Documents",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 5,
+      "title": "Generation Duration (p90) by Target Output Format",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.90, sum by (le, output_type) (rate(contentforge_ai_generation_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{output_type}} p90 (s)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 6,
+      "title": "AI Generation Failures by Reason",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "sum by (reason, output_type) (rate(contentforge_ai_generation_failures_total[5m]))",
+          "legendFormat": "{{output_type}} - {{reason}}",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["contentforge", "ai", "model", "performance"],
+  "title": "ContentForge AI - Generation & Model Performance",
+  "uid": "cf-ai-performance",
+  "version": 1
+}

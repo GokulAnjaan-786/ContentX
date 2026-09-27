@@ -1,0 +1,101 @@
+version: '3.8'
+
+# ==============================================================================
+# ContentForge AI - Production Docker Compose Override
+# Usage: docker compose -f docker-compose.yml -f docker-compose.prod.yml up -d
+# ==============================================================================
+
+services:
+  postgres:
+    restart: always
+    ports: []  # Internal network only - no host exposure
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  redis:
+    restart: always
+    ports: []  # Internal network only - no host exposure
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  minio:
+    restart: always
+    ports: []  # Internal network only - reverse proxied via Nginx if needed
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  backend:
+    restart: always
+    environment:
+      ENVIRONMENT: production
+      DEBUG: "false"
+    ports: []  # Proxied solely through Nginx
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  worker:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  celery-beat:
+    restart: always
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "20m"
+        max-file: "3"
+
+  frontend:
+    restart: always
+    ports: []  # Proxied solely through Nginx
+    environment:
+      NODE_ENV: production
+      NEXT_PUBLIC_API_URL: https://${DOMAIN_NAME:-contentforge.ai}
+
+  flower:
+    restart: always
+    ports: []  # Accessible only through Nginx protected location
+
+  prometheus:
+    restart: always
+    ports: []  # Scraped internally
+
+  grafana:
+    restart: always
+    ports: []  # Proxied through Nginx
+
+  nginx:
+    restart: always
+    ports:
+      - "80:80"
+      - "443:443"
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "100m"
+        max-file: "5"
+
+  # Automated SSL Certificate Renewal via Certbot
+  certbot:
+    image: certbot/certbot:latest
+    container_name: contentforge_certbot
+    volumes:
+      - certbot_etc:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"

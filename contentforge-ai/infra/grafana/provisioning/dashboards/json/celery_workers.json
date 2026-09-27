@@ -1,0 +1,86 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "links": [],
+  "liveNow": false,
+  "panels": [
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 8, "x": 0, "y": 0 },
+      "id": 1,
+      "title": "Active Worker Jobs",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "contentforge_active_generation_jobs",
+          "legendFormat": "Active Jobs",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 8, "x": 8, "y": 0 },
+      "id": 2,
+      "title": "Document Extraction Rate",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(rate(contentforge_document_processing_duration_seconds_count[5m])) * 60",
+          "legendFormat": "Docs / min",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 4, "w": 8, "x": 16, "y": 0 },
+      "id": 3,
+      "title": "Celery Task Failures",
+      "type": "stat",
+      "targets": [
+        {
+          "expr": "sum(contentforge_ai_generation_failures_total)",
+          "legendFormat": "Total Failures",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 4 },
+      "id": 4,
+      "title": "Document Processing Latency by Source Type",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum by (le, source_type) (rate(contentforge_document_processing_duration_seconds_bucket[5m])))",
+          "legendFormat": "{{source_type}} p95 (s)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "collapsed": false,
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 4 },
+      "id": 5,
+      "title": "Understanding Pass Execution Duration",
+      "type": "timeseries",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.90, sum by (le) (rate(contentforge_understanding_pass_duration_seconds_bucket[5m])))",
+          "legendFormat": "Understanding Pass p90 (s)",
+          "refId": "A"
+        }
+      ]
+    }
+  ],
+  "schemaVersion": 39,
+  "tags": ["contentforge", "celery", "worker", "queue"],
+  "title": "ContentForge AI - Celery Queue & Worker Health",
+  "uid": "cf-celery-health",
+  "version": 1
+}

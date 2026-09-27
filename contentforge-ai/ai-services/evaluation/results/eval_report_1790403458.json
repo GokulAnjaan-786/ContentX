@@ -1,0 +1,422 @@
+{
+  "timestamp": "2026-09-26T06:17:38.783658+00:00",
+  "total_documents_evaluated": 16,
+  "execution_time_seconds": 0.39,
+  "overall_metrics": {
+    "faithfulness": 0.546,
+    "answer_relevancy": 0.926,
+    "contextual_recall": 0.869,
+    "composite_score": 0.757
+  },
+  "target_thresholds": {
+    "faithfulness_target": 0.85,
+    "answer_relevancy_target": 0.8,
+    "contextual_recall_target": 0.8
+  },
+  "document_breakdown": [
+    {
+      "doc_id": "doc_01",
+      "title": "Post-Mortem: US-East Multi-AZ Aurora DB Failover Incident",
+      "category": "incident_report",
+      "facts_extracted": 6,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.58,
+      "average_answer_relevancy": 0.9,
+      "outputs": {
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        },
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_02",
+      "title": "Security Advisory SEC-2026-104: Critical RPC Auth Bypass",
+      "category": "security_advisory",
+      "facts_extracted": 6,
+      "contextual_recall": 0.8,
+      "average_faithfulness": 0.64,
+      "average_answer_relevancy": 0.867,
+      "outputs": {
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_03",
+      "title": "Architectural Patterns: Zero-Trust Service Mesh in Production",
+      "category": "technical_article",
+      "facts_extracted": 5,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.513,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_04",
+      "title": "Executive Strategy: Scaling AI Compute Efficiency in FY27",
+      "category": "executive_brief",
+      "facts_extracted": 5,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.27,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        },
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        }
+      }
+    },
+    {
+      "doc_id": "doc_05",
+      "title": "Incident Retrospective: Edge Ingress BGP Route Leak",
+      "category": "incident_report",
+      "facts_extracted": 5,
+      "contextual_recall": 0.4,
+      "average_faithfulness": 0.64,
+      "average_answer_relevancy": 0.867,
+      "outputs": {
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        }
+      }
+    },
+    {
+      "doc_id": "doc_06",
+      "title": "Scaling Event Streams: Kafka Tiered Storage Architecture",
+      "category": "technical_article",
+      "facts_extracted": 5,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.7,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        }
+      }
+    },
+    {
+      "doc_id": "doc_07",
+      "title": "Compliance Bulletin: Mandatory Deprecation of TLS 1.0/1.1 and CBC Ciphers",
+      "category": "security_advisory",
+      "facts_extracted": 5,
+      "contextual_recall": 0.8,
+      "average_faithfulness": 0.46,
+      "average_answer_relevancy": 0.8,
+      "outputs": {
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_08",
+      "title": "Board Briefing: Q3 Enterprise Security Posture & SOC Metrics",
+      "category": "executive_brief",
+      "facts_extracted": 5,
+      "contextual_recall": 0.8,
+      "average_faithfulness": 0.27,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        },
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        }
+      }
+    },
+    {
+      "doc_id": "doc_09",
+      "title": "Post-Mortem: Redis OOM Cache Eviction Cascade",
+      "category": "incident_report",
+      "facts_extracted": 5,
+      "contextual_recall": 0.8,
+      "average_faithfulness": 0.57,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_10",
+      "title": "Engineering Guide: High-Precision RAG with Sliding-Window Chunking",
+      "category": "technical_article",
+      "facts_extracted": 5,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.7,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        }
+      }
+    },
+    {
+      "doc_id": "doc_11",
+      "title": "Vulnerability Bulletin: CVE-2026-4402 Internal DNS Resolver Poisoning",
+      "category": "security_advisory",
+      "facts_extracted": 5,
+      "contextual_recall": 0.75,
+      "average_faithfulness": 0.89,
+      "average_answer_relevancy": 0.8,
+      "outputs": {
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        }
+      }
+    },
+    {
+      "doc_id": "doc_12",
+      "title": "Compliance Milestone: Successful SOC2 Type II and ISO 27001 Re-Certification",
+      "category": "executive_brief",
+      "facts_extracted": 5,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.27,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        },
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        }
+      }
+    },
+    {
+      "doc_id": "doc_13",
+      "title": "Deep Dive: eBPF Non-Intrusive Continuous Profiling",
+      "category": "technical_article",
+      "facts_extracted": 5,
+      "contextual_recall": 0.75,
+      "average_faithfulness": 0.7,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        }
+      }
+    },
+    {
+      "doc_id": "doc_14",
+      "title": "Security Incident: Thwarted Supply Chain Tampering in Build Runner",
+      "category": "incident_report",
+      "facts_extracted": 6,
+      "contextual_recall": 0.8,
+      "average_faithfulness": 0.46,
+      "average_answer_relevancy": 0.8,
+      "outputs": {
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_15",
+      "title": "Security Advisory: Total Deprecation of Legacy SHA-1 and RSA-1024 Certificates",
+      "category": "security_advisory",
+      "facts_extracted": 5,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.46,
+      "average_answer_relevancy": 0.8,
+      "outputs": {
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_16",
+      "title": "Database Optimization: Scaling PostgreSQL to 50,000 Concurrent Connections",
+      "category": "technical_article",
+      "facts_extracted": 5,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.513,
+      "average_answer_relevancy": 1.0,
+      "outputs": {
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,66 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --brand-primary: #4F46E5;
+    --brand-primary-hover: #4338CA;
+    --brand-subtle: #EEF2FF;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased min-h-screen font-sans;
+  }
+}
+
+/* Custom interactive claim highlights */
+.claim-unverified {
+  text-decoration: underline;
+  text-decoration-style: wavy;
+  text-decoration-color: #F97316;
+  text-decoration-thickness: 2px;
+  background-color: rgba(254, 243, 199, 0.5);
+  padding: 1px 2px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+
+.claim-unverified:hover {
+  background-color: rgba(253, 230, 138, 0.8);
+}
+
+.claim-verified {
+  cursor: pointer;
+  border-radius: 3px;
+  padding: 1px 2px;
+  transition: all 0.15s ease;
+}
+
+.claim-verified:hover {
+  background-color: #EEF2FF;
+  color: #3730A3;
+}
+
+.claim-selected {
+  background-color: #C7D2FE !important;
+  color: #312E81 !important;
+  box-shadow: 0 0 0 2px #818CF8;
+}
+
+/* Subtle scrollbars */
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: #CBD5E1;
+  border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #94A3B8;
+}

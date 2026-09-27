@@ -1,0 +1,126 @@
+name: CD Staging Deployment
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Target deployment environment'
+        required: true
+        default: 'staging'
+        type: choice
+        options:
+          - staging
+          - production
+
+env:
+  REGISTRY: ghcr.io
+  BACKEND_IMAGE: ghcr.io/${{ github.repository }}/backend
+  WORKER_IMAGE: ghcr.io/${{ github.repository }}/worker
+  FRONTEND_IMAGE: ghcr.io/${{ github.repository }}/frontend
+
+jobs:
+  build-and-push:
+    name: Build & Push Production Images
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.BACKEND_IMAGE }}
+
+      - name: Build & Push Backend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.BACKEND_IMAGE }}:${{ github.sha }}
+            ${{ env.BACKEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push Worker Image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: worker/Dockerfile
+          push: true
+          tags: |
+            ${{ env.WORKER_IMAGE }}:${{ github.sha }}
+            ${{ env.WORKER_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Build & Push Frontend Image
+        uses: docker/build-push-action@v5
+        with:
+          context: frontend
+          file: frontend/Dockerfile
+          push: true
+          tags: |
+            ${{ env.FRONTEND_IMAGE }}:${{ github.sha }}
+            ${{ env.FRONTEND_IMAGE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Deploy to Single VPS Host
+    needs: build-and-push
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Execute Deployment via SSH
+        uses: appleboy/ssh-action@v1.0.3
+        with:
+          host: ${{ secrets.DEPLOY_HOST }}
+          username: ${{ secrets.DEPLOY_USER }}
+          key: ${{ secrets.DEPLOY_SSH_KEY }}
+          script: |
+            set -e
+            cd /opt/contentforge
+
+            # Pull latest code and images
+            git pull origin main
+            echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+            
+            # Pull new images
+            docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml pull backend worker frontend
+
+            # Run database migrations
+            docker compose -f infra/docker-compose.yml run --rm backend alembic upgrade head
+
+            # Restart application stack with zero downtime
+            docker compose -f infra/docker-compose.yml -f infra/docker-compose.prod.yml up -d --remove-orphans
+
+            # Health check validation
+            sleep 10
+            HEALTH_STATUS=$(curl -s -o /dev/null -w "%{http_code}" http://localhost:8000/health || echo "000")
+            if [ "$HEALTH_STATUS" -ne 200 ]; then
+              echo "Deployment health check failed with status $HEALTH_STATUS! Initiating rollback..."
+              docker compose -f infra/docker-compose.yml rollback || true
+              exit 1
+            fi
+            echo "Deployment successfully verified. HTTP 200 OK on /health."

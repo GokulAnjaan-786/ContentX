@@ -1,0 +1,82 @@
+{
+  "timestamp": "2026-09-26T06:17:31.469116+00:00",
+  "total_documents_evaluated": 2,
+  "execution_time_seconds": 0.13,
+  "overall_metrics": {
+    "faithfulness": 0.606,
+    "answer_relevancy": 0.886,
+    "contextual_recall": 0.9,
+    "composite_score": 0.778
+  },
+  "target_thresholds": {
+    "faithfulness_target": 0.85,
+    "answer_relevancy_target": 0.8,
+    "contextual_recall_target": 0.8
+  },
+  "document_breakdown": [
+    {
+      "doc_id": "doc_01",
+      "title": "Post-Mortem: US-East Multi-AZ Aurora DB Failover Incident",
+      "category": "incident_report",
+      "facts_extracted": 6,
+      "contextual_recall": 1.0,
+      "average_faithfulness": 0.58,
+      "average_answer_relevancy": 0.9,
+      "outputs": {
+        "linkedin": {
+          "faithfulness": 0.4,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        },
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    },
+    {
+      "doc_id": "doc_02",
+      "title": "Security Advisory SEC-2026-104: Critical RPC Auth Bypass",
+      "category": "security_advisory",
+      "facts_extracted": 6,
+      "contextual_recall": 0.8,
+      "average_faithfulness": 0.64,
+      "average_answer_relevancy": 0.867,
+      "outputs": {
+        "advisory": {
+          "faithfulness": 0.78,
+          "answer_relevancy": 0.6,
+          "status": "completed_with_warnings",
+          "facts_cited": 2
+        },
+        "twitter": {
+          "faithfulness": 1.0,
+          "answer_relevancy": 1.0,
+          "status": "completed",
+          "facts_cited": 3
+        },
+        "executive_summary": {
+          "faithfulness": 0.14,
+          "answer_relevancy": 1.0,
+          "status": "completed_with_warnings",
+          "facts_cited": 4
+        }
+      }
+    }
+  ]
+}
