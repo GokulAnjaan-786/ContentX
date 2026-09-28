@@ -146,36 +146,56 @@ async def execute_generation_job(
             logger.warning(f"Unknown generator requested: {key}")
             continue
 
-        # 1. Output-Specific RAG Retrieval using BGE-M3 + pgvector
+        # 1. Output-Specific Multi-Stage RAG Retrieval via Query Intent, BGE-M3, Content Filtering, and Reranking
         retrieval_objective = OUTPUT_RETRIEVAL_OBJECTIVES.get(key, "Retrieve relevant source facts and key findings.")
         try:
-            generate_and_store_chunk_embeddings(db, job.document_id)
-            relevant_chunks = search_relevant_chunks(db, job.document_id, query=retrieval_objective, top_k=8)
+            from ai_services.retrieval.retriever import retrieve_relevant_content_chunks
+            retrieval_result = retrieve_relevant_content_chunks(
+                db=db,
+                document_id=job.document_id,
+                query=retrieval_objective,
+                target_format=key,
+                top_k_candidates=20,
+                top_n_final=8,
+            )
+            relevant_chunks = retrieval_result["selected_chunks"]
+            query_intent = retrieval_result["intent"]
             retrieved_chunk_ids = {c.id for c in relevant_chunks}
         except Exception as rag_err:
             logger.warning(f"RAG retrieval warning for {key}: {rag_err}")
             relevant_chunks = []
+            query_intent = None
             retrieved_chunk_ids = set()
 
-        # 2. Filter FactRegistry facts linked to retrieved chunks or high/medium importance
+        # 2. Filter FactRegistry facts linked to retrieved chunks or substantive fact types
         if retrieved_chunk_ids:
             relevant_facts = [
                 f for f in facts 
-                if f.source_chunk_id in retrieved_chunk_ids or getattr(f, "importance", "high") in ("high", "medium")
+                if f.source_chunk_id in retrieved_chunk_ids or getattr(f, "fact_type", "") in ("incident_finding", "action_item", "statistic")
             ]
             if not relevant_facts:
                 relevant_facts = facts
         else:
             relevant_facts = facts
 
-        formatted_facts, raw_facts = build_generator_context(relevant_facts, key, settings, audience=aud_type)
+        allow_meta = query_intent.allow_metadata if query_intent else False
+        formatted_facts, raw_facts = build_generator_context(
+            facts=relevant_facts,
+            output_type=key,
+            settings=settings,
+            audience=aud_type,
+            retrieved_chunks=relevant_chunks,
+            allow_metadata=allow_meta,
+        )
 
         # Logging development debug visibility
         active_model = get_active_embedding_model_name()
+        intent_name = query_intent.intent_type.value if query_intent else "UNKNOWN"
         logger.info(
-            f"RAG PIPELINE | OUTPUT: {key} | EMBEDDING_MODEL: {active_model} | VECTOR_STORE: PostgreSQL pgvector | "
+            f"RAG PIPELINE | OUTPUT: {key} | INTENT: {intent_name} | EMBEDDING_MODEL: {active_model} | VECTOR_STORE: PostgreSQL pgvector | "
             f"RETRIEVED_CHUNKS: {len(relevant_chunks)} | SELECTED_FACTS: {len(relevant_facts)} | FINAL_CONTEXT_FACTS: {len(raw_facts)}"
         )
+
 
         tasks.append(_run_single_generator(key, generator_fn, formatted_facts, raw_facts, settings, audience=aud_type))
         output_pairs_ordered.append((key, aud_type))

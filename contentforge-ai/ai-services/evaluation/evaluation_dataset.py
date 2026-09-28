@@ -1,0 +1,58 @@
+from typing import Dict, List
+
+EVALUATION_DATASET: List[Dict] = [
+    {
+        "id": "eval_01",
+        "category": "CONTENT_GENERATION",
+        "query": "Create a LinkedIn post about the key lessons from Rich Dad Poor Dad.",
+        "target_format": "linkedin",
+        "expected_intent": "CONTENT_GENERATION",
+        "ground_truth": "Key financial education lessons: Assets put money into your pocket, liabilities take money out. Rich people don't work for money, they make money work for them. Financial literacy requires understanding cash flow, income statements, and balance sheets.",
+        "should_contain_metadata": False,
+    },
+    {
+        "id": "eval_02",
+        "category": "KEY_INSIGHTS",
+        "query": "What are the main financial lessons and concepts of assets vs liabilities in the book?",
+        "target_format": "executive_summary",
+        "expected_intent": "KEY_INSIGHTS",
+        "ground_truth": "Assets generate cash flow and put money in your pocket. Liabilities represent expenses or debts that take money out of your pocket. Financial independence comes from accumulating income-generating assets.",
+        "should_contain_metadata": False,
+    },
+    {
+        "id": "eval_03",
+        "category": "SUMMARY",
+        "query": "Summarize the core principles of building wealth and financial intelligence.",
+        "target_format": "presentation",
+        "expected_intent": "SUMMARY",
+        "ground_truth": "Building wealth requires mastering one skill away from great wealth, utilizing corporate structures for tax protection, avoiding the rat race of working solely for earned income, and investing in cash-flowing real estate or businesses.",
+        "should_contain_metadata": False,
+    },
+    {
+        "id": "eval_04",
+        "category": "METADATA_LOOKUP",
+        "query": "Who is the author of Rich Dad Poor Dad and what is the publication information?",
+        "target_format": "general",
+        "expected_intent": "METADATA_LOOKUP",
+        "ground_truth": "The author is Robert Kiyosaki, published by CASHFLOW Technologies, Inc. and Plata Publishing LLC in 2011.",
+        "should_contain_metadata": True,
+    },
+    {
+        "id": "eval_05",
+        "category": "DATE_LOOKUP",
+        "query": "When was the book published and what is the copyright year?",
+        "target_format": "general",
+        "expected_intent": "DATE_LOOKUP",
+        "ground_truth": "Copyright © 2011 by CASHFLOW Technologies, Inc.",
+        "should_contain_metadata": True,
+    },
+    {
+        "id": "eval_06",
+        "category": "CONTENT_GENERATION",
+        "query": "Create a Security Advisory on critical zero-day vulnerabilities and mitigations.",
+        "target_format": "advisory",
+        "expected_intent": "CONTENT_GENERATION",
+        "ground_truth": "CVE-2026-8891 Remote Code Execution vulnerability identified. Patch v2.4.1 deployed across 100% of affected servers. ZTNA implementation reduced unauthorized access by 94%.",
+        "should_contain_metadata": False,
+    },
+]

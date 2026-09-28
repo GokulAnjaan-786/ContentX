@@ -49,19 +49,27 @@ def build_document_context(
             f"Document {document.id} exceeds context limit ({total_words} words > {settings.RAG_CONTEXT_TOKEN_LIMIT}). "
             f"Activating RAG retrieval pass."
         )
-        # First ensure embeddings exist
+        # Ensure embeddings exist
         generate_and_store_chunk_embeddings(db, document.id)
-        # Retrieve key diverse chunks
-        selected_chunks = search_relevant_chunks(
-            db,
-            document.id,
-            query="executive summary key facts methodology findings recommendations",
-            top_k=8,
-        )
+        
+        # Filter candidate chunks to exclude copyright and table of contents preambles
+        from ai_services.retrieval.content_filter import classify_content_text
+        substantive_chunks = [c for c in chunks if classify_content_text(c.text) not in ("copyright", "table_of_contents", "noise")]
+        if not substantive_chunks:
+            substantive_chunks = chunks
+
+        # Sample up to 10 chunks evenly across document body to ensure broad chapter coverage
+        if len(substantive_chunks) <= 10:
+            selected_chunks = substantive_chunks
+        else:
+            step = len(substantive_chunks) / 10.0
+            selected_chunks = [substantive_chunks[int(i * step)] for i in range(10)]
+
         # Sort by chunk_index to preserve narrative flow
         selected_chunks.sort(key=lambda c: c.chunk_index)
     else:
         selected_chunks = chunks
+
 
     formatted_parts = []
     for c in selected_chunks:

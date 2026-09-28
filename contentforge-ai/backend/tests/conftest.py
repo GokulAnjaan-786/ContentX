@@ -26,6 +26,7 @@ os.environ["CLAMAV_ENABLED"] = "true"
 os.environ["DATABASE_URL"] = "sqlite:///:memory:"
 
 from app.core.config import settings
+settings.ENVIRONMENT = "testing"
 from app.core.database import Base, get_db
 from app.core.security import get_password_hash, create_access_token
 from app.models.organisation import Organisation

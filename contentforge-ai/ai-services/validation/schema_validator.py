@@ -7,12 +7,12 @@ logger = logging.getLogger(__name__)
 
 # 1. LinkedIn Schema
 class LinkedInOutput(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
-    hook: str = Field(..., description="Opening single-line hook")
-    body: str = Field(..., description="Post body under 200 words")
+    hook: str = Field(..., alias="post_hook")
+    body: str = Field(..., alias="post_content")
     hashtags: List[str] = Field(default_factory=list)
-    call_to_action: str = Field(..., description="Closing call to action")
+    call_to_action: str = Field(..., alias="cta")
     fact_ids_used: List[str] = Field(default_factory=list)
 
 
@@ -23,7 +23,7 @@ class TweetItem(BaseModel):
 
 
 class TwitterOutput(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     tweets: List[TweetItem] = Field(..., min_length=1, max_length=10)
     fact_ids_used: List[str] = Field(default_factory=list)
@@ -31,7 +31,7 @@ class TwitterOutput(BaseModel):
 
 # 3. Advisory Schema
 class AdvisoryOutput(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     title: str
     severity: str
@@ -45,11 +45,11 @@ class AdvisoryOutput(BaseModel):
 
 # 4. Executive Summary Schema
 class ExecutiveSummaryOutput(BaseModel):
-    model_config = ConfigDict(extra="ignore")
+    model_config = ConfigDict(extra="ignore", populate_by_name=True)
 
     title: str
-    summary_text: str
-    key_takeaways: List[str] = Field(default_factory=list)
+    summary_text: str = Field(..., alias="summary")
+    key_takeaways: List[str] = Field(default_factory=list, alias="takeaways")
     fact_ids_used: List[str] = Field(default_factory=list)
 
 

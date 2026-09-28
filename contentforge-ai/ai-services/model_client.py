@@ -54,6 +54,9 @@ class ModelClient:
         temperature: float = 0.1,
     ) -> str:
         """Call Ollama /api/generate endpoint."""
+        if settings.ENVIRONMENT == "testing" and self.mock_handler is None:
+            raise httpx.ConnectError("Testing environment active - bypassing live Ollama call")
+
         if self.mock_handler is not None:
             res = self.mock_handler(prompt, system)
             if isinstance(res, dict):

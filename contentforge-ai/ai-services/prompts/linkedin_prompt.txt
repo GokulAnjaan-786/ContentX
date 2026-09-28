@@ -1309,4 +1309,12 @@ Do not expose internal Fact IDs in human-readable content.
 
 Ensure every substantive factual claim can be traced to the source.
 
-Return ONLY the valid JSON object.
+REQUIRED JSON OUTPUT SCHEMA:
+Return ONLY a valid JSON object with the following exact keys:
+{
+  "hook": "Strong single-line hook summarizing key financial/content insight",
+  "body": "Detailed post narrative grounded strictly in facts",
+  "call_to_action": "Closing professional call to action",
+  "hashtags": ["#Topic1", "#Topic2", "#Topic3"],
+  "fact_ids_used": ["f1", "f2"]
+}

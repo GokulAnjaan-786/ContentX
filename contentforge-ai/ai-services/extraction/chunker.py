@@ -1,6 +1,7 @@
 import math
 from typing import Any, Dict, List, Optional, Union
 from app.core.config import settings
+from ai_services.retrieval.content_filter import classify_content_text
 
 
 def chunk_document(
@@ -83,6 +84,7 @@ def chunk_document(
             "word_count": len(chunk_words),
             "page_number": page_ref,
             "section_reference": str(section_ref) if section_ref else None,
+            "content_type": classify_content_text(chunk_text),
         })
 
         chunk_index += 1
@@ -91,3 +93,4 @@ def chunk_document(
         start += step
 
     return chunks
+

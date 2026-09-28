@@ -1156,4 +1156,11 @@ Do not expose internal processing information.
 
 Do not expose internal Fact IDs in human-readable content.
 
-Return ONLY the valid JSON object defined above.
+REQUIRED JSON OUTPUT SCHEMA:
+Return ONLY a valid JSON object with the following exact keys:
+{
+  "title": "Concise executive title summarizing key subject",
+  "summary_text": "Executive summary paragraph summarizing core findings and key lessons",
+  "key_takeaways": ["Takeaway 1", "Takeaway 2", "Takeaway 3"],
+  "fact_ids_used": ["f1", "f2"]
+}
